@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>mbed Device Connector Webapp Quickstart</title>
+    <title>ExD TSDB Connector Test Webapp</title>
 
     <link rel="stylesheet" href="css/normalize.css">
     <link rel="stylesheet" href="css/foundation.min.css">
@@ -24,7 +24,7 @@
     <div class="blueband">
       <div class="row">
         <div class="small-12 columns">
-          <h1>Webapp Quickstart</h1>
+          <h1>ExD TSDB Connector Test Webapp</h1>
         </div>
       </div>
     </div>
@@ -34,7 +34,7 @@
         <div class="small-12 columns">
           <div class="row">
             <div class="small-12 columns">
-              <h2>{{name}}</h2>
+              <h2>Device ID: {{name}}</h2>
             </div>
           </div>
           <div class="row">
@@ -56,6 +56,36 @@
                   <button class="blink">Blink (POST)</button>
                 </div>
               </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="small-12 medium-6 columns">
+              <div class="row">
+                <div class="small-12 columns">
+                  <h4>Accel X: <span class="accel-x-value">Unknown</span>
+                  Y: <span class="accel-y-value">Unknown</span>
+                  Z: <span class="accel-z-value">Unknown</span></h4>
+                </div>
+              </div>
+              <label><input type="checkbox" class="subscribe-accel"> Subscribe</label>
+              <button class="get-accel">GET</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="small-12 medium-6 columns">
+              <div class="row">
+                <div class="small-12 columns">
+                  <h4>Sound level: <span class="sound-level-value">Unknown</span></h4>
+                </div>
+                <div class="small-12 columns">
+                  <h4>Temperature: <span class="temperature-value">Unknown</span></h4>
+                </div>
+                <div class="small-12 columns">
+                  <h4>Light level: <span class="light-level-value">Unknown</span></h4>
+                </div>
+              </div>
+              <label><input type="checkbox" class="subscribe-analog"> Subscribe</label>
+              <button class="get-analog">GET</button>
             </div>
           </div>
         </div>
@@ -94,8 +124,48 @@
             }
           });
 
+          _this.find('.subscribe-accel').change(function() {
+            if ($(this).is(":checked")) {
+              _this.find('.get-accel').prop('disabled', true);
+              socket.emit('subscribe-to-accel', {
+                endpointName: _this.attr('id')
+              });
+            } else {
+              _this.find('.get-accel').prop('disabled', false);
+              socket.emit('unsubscribe-to-accel', {
+                endpointName: _this.attr('id')
+              });
+            }
+          });
+
+          _this.find('.subscribe-analog').change(function() {
+            if ($(this).is(":checked")) {
+              _this.find('.get-analog').prop('disabled', true);
+              socket.emit('subscribe-to-analog', {
+                endpointName: _this.attr('id')
+              });
+            } else {
+              _this.find('.get-analog').prop('disabled', false);
+              socket.emit('unsubscribe-to-analog', {
+                endpointName: _this.attr('id')
+              });
+            }
+          });
+
           _this.find('.get-presses').on('click', function() {
             socket.emit('get-presses', {
+              endpointName: _this.attr('id')
+            });
+          });
+
+          _this.find('.get-accel').on('click', function() {
+            socket.emit('get-accel', {
+              endpointName: _this.attr('id')
+            });
+          });
+
+          _this.find('.get-analog').on('click', function() {
+            socket.emit('get-analog', {
               endpointName: _this.attr('id')
             });
           });
@@ -124,6 +194,36 @@
         socket.on('presses', function (data) {
           console.log('presses', data);
           $('#' + data.endpointName + ' .presses-value').html(data.value);
+        });
+
+        socket.on('accel-x', function (data) {
+          console.log('accel-x', data);
+          $('#' + data.endpointName + ' .accel-x-value').html(data.value);
+        });
+
+        socket.on('accel-y', function (data) {
+          console.log('accel-y', data);
+          $('#' + data.endpointName + ' .accel-y-value').html(data.value);
+        });
+
+        socket.on('accel-z', function (data) {
+          console.log('accel-z', data);
+          $('#' + data.endpointName + ' .accel-z-value').html(data.value);
+        });
+
+        socket.on('sound-level', function (data) {
+          console.log('sound-level', data);
+          $('#' + data.endpointName + ' .sound-level-value').html(data.value);
+        });
+
+        socket.on('temperature', function (data) {
+          console.log('temperature', data);
+          $('#' + data.endpointName + ' .temperature-value').html(data.value);
+        });
+
+        socket.on('light-level', function (data) {
+          console.log('light-level', data);
+          $('#' + data.endpointName + ' .light-level-value').html(data.value);
         });
 
         socket.on('subscribed-to-presses', function (data) {
