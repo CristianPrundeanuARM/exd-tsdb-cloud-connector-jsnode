@@ -24,6 +24,7 @@ var accelZResourceURI = '/3313/0/5704';
 var soundLevelResourceURI = '/3324/0/5600';
 var temperatureResourceURI = '/3303/0/5600';
 var lightLevelResourceURI = '/3301/0/5600';
+var jsonDataResourceURI = '/alldata/0/json';
 
 // Instantiate an mbed Device Connector object
 var mbedConnectorApi = new MbedConnectorApi({
@@ -143,6 +144,17 @@ io.on('connection', function (socket) {
     });
   });
 
+  socket.on('subscribe-to-json', function (data) {
+    // Subscribe to changes in any of the json data
+    console.log('Subscribing to json data updates');
+    mbedConnectorApi.putResourceSubscription(data.endpointName, jsonDataResourceURI, function(error) {
+      if (error) throw error;
+      socket.emit('subscribed-to-json', {
+        endpointName: data.endpointName
+      });
+    });
+  });
+
   socket.on('unsubscribe-to-presses', function(data) {
     // Unsubscribe from the resource /3200/0/5501 (button presses)
     console.log('Unsubscribing from button press updates');
@@ -195,6 +207,17 @@ io.on('connection', function (socket) {
     mbedConnectorApi.deleteResourceSubscription(data.endpointName, lightLevelResourceURI, function(error) {
       if (error) throw error;
       socket.emit('unsubscribed-to-light-level', {
+        endpointName: data.endpointName
+      });
+    });
+  });
+
+  socket.on('unsubscribe-to-json', function(data) {
+    // Unsubscribe from json data updates
+    console.log('Unsubscribing from json data updates');
+    mbedConnectorApi.deleteResourceSubscription(data.endpointName, jsonDataResourceURI, function(error) {
+      if (error) throw error;
+      socket.emit('unsubscribed-to-json', {
         endpointName: data.endpointName
       });
     });
@@ -255,6 +278,17 @@ io.on('connection', function (socket) {
     mbedConnectorApi.getResourceValue(data.endpointName, lightLevelResourceURI, function(error, value) {
       if (error) throw error;
       socket.emit('light-level', {
+        endpointName: data.endpointName,
+        value: value
+      });
+    });
+  });
+
+  socket.on('get-json', function(data) {
+    // Read data from json GET resource
+    mbedConnectorApi.getResourceValue(data.endpointName, jsonDataResourceURI, function(error, value) {
+      if (error) throw error;
+      socket.emit('json-data', {
         endpointName: data.endpointName,
         value: value
       });
@@ -339,6 +373,14 @@ mbedConnectorApi.on('notification', function(notification) {
   if (notification.path === lightLevelResourceURI) {
     sockets.forEach(function(socket) {
       socket.emit('light-level', {
+        endpointName: notification.ep,
+        value: notification.payload
+      });
+    });
+  } else
+  if (notification.path === jsonDataResourceURI) {
+    sockets.forEach(function(socket) {
+      socket.emit('json-data', {
         endpointName: notification.ep,
         value: notification.payload
       });

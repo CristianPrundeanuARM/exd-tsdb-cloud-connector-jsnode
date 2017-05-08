@@ -88,6 +88,16 @@
               <button class="get-analog">GET</button>
             </div>
           </div>
+          <div class="row">
+            <div class="small-12 columns">
+              <div class="row">
+                <h4>Aggregated data:</h4>
+                <pre><span class="json-data-value">Unknown</span></pre>
+              </div>
+              <label><input type="checkbox" class="subscribe-json"> Subscribe</label>
+              <button class="get-json">GET</button>
+            </div>
+          </div>
         </div>
       </div>
     {{else}}
@@ -152,6 +162,20 @@
             }
           });
 
+          _this.find('.subscribe-json').change(function() {
+            if ($(this).is(":checked")) {
+              _this.find('.get-json').prop('disabled', true);
+              socket.emit('subscribe-to-json', {
+                endpointName: _this.attr('id')
+              });
+            } else {
+              _this.find('.get-json').prop('disabled', false);
+              socket.emit('unsubscribe-to-json', {
+                endpointName: _this.attr('id')
+              });
+            }
+          });
+
           _this.find('.get-presses').on('click', function() {
             socket.emit('get-presses', {
               endpointName: _this.attr('id')
@@ -166,6 +190,12 @@
 
           _this.find('.get-analog').on('click', function() {
             socket.emit('get-analog', {
+              endpointName: _this.attr('id')
+            });
+          });
+
+          _this.find('.get-json').on('click', function() {
+            socket.emit('get-json', {
               endpointName: _this.attr('id')
             });
           });
@@ -224,6 +254,11 @@
         socket.on('light-level', function (data) {
           console.log('light-level', data);
           $('#' + data.endpointName + ' .light-level-value').html(data.value);
+        });
+
+        socket.on('json-data', function (data) {
+          console.log('json-data', data);
+          $('#' + data.endpointName + ' .json-data-value').html(data.value);
         });
 
         socket.on('subscribed-to-presses', function (data) {
