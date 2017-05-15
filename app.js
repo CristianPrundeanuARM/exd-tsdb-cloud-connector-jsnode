@@ -8,11 +8,15 @@ var http = require('http');
 var path = require('path');
 var express = require('express');
 var MbedConnectorApi = require('mbed-connector-api');
+var EventHubClient = require('azure-event-hubs').Client;
+var Promise = require('bluebird');
 
 // CONFIG (change these)
 var accessKey = process.env.ACCESS_KEY || "ChangeMe";
 var port = process.env.PORT || 8080;
 var bindhost = process.env.HOST || localhost;
+var connectionStringAzure = process.env.AZURE_CONNECTION_STRING || "Azure Credentials Missing";
+var eventHubPathAzure = process.env.AZURE_EVENTHUB_NAME || 'exd-eventhub1'; //messages/events/';
 
 // Paths to resources on the endpoints
 var blinkResourceURI = '/3201/0/5850';
@@ -26,6 +30,86 @@ var temperatureResourceURI = '/3303/0/5600';
 var lightLevelResourceURI = '/3301/0/5600';
 var distanceResourceURI = '/3330/0/5600';
 var jsonDataResourceURI = '/alldata/0/json';
+
+// Azure Event Hub
+/*
+var sendEvent = function (eventBody) {
+  return function (sender) {
+    console.log('Sending Event: ' + eventBody);
+    return sender.send(eventBody);
+  };
+};
+
+var printError = function (err) {
+  console.error(err.message);
+};
+
+var printEvent = function (ehEvent) {
+  console.log('Event Received: ');
+  console.log(JSON.stringify(ehEvent.body));
+  console.log('');
+};
+
+var receiveAfterTime = Date.now() - 5000;
+
+var client = EventHubClient.fromConnectionString(connectionStringAzure, eventHubPathAzure);
+client.open()
+      .then(client.getPartitionIds.bind(client))
+      .then(function (partitionIds) {
+        return Promise.map(partitionIds, function (partitionId) {
+          return client.createReceiver('$Default', partitionId, { 'startAfterTime' : receiveAfterTime}).then(function(receiver) {
+            receiver.on('errorReceived', printError);
+            receiver.on('message', printEvent);
+          });
+        });
+      })
+      .then(function() {
+        return client.createSender();
+      })
+      .then(sendEvent('{"uri":"/3200/0/5501", "desc":"Button", "value":"12"}'))
+      .catch(printError);
+*/
+
+var azureClient = EventHubClient.fromConnectionString(connectionStringAzure, eventHubPathAzure);
+var azureClientSender; // AMQPClient
+
+azureClient.open()
+           .then(function() {
+             return azureClient.createSender();
+           })
+           .then(function (sender) {
+               sender.on('errorReceived', function (err) { console.log(err); });
+               azureClientSender = sender;
+//               sender.send('{"uri":"/3200/0/5501", "desc":"Button", "value":"7"}');
+               console.log('Azure Sender created');
+           });
+
+/*
+var azureClientReceiver = EventHubClient.fromConnectionString(connectionStringAzure, eventHubPathAzure);
+//var receiveAfterTime = Date.now() - 5000;
+azureClientReceiver.open()
+           .then(azureClientReceiver.getPartitionIds.bind(azureClientReceiver))
+           .then(function(partitionIds) {
+               return Promise.map(partitionIds, function (partitionId) {
+                   console.log('partition: ', partitionId);
+//                   return azureClientReceiver.createReceiver('$Default', partitionId, { 'startAfterTime' : receiveAfterTime})
+                   return azureClientReceiver.createReceiver('$Default', partitionId)
+                                             .then(function(receiver) {
+                                                 receiver.on('errorReceived', function (err) {
+                                                     console.error(err.message);
+                                                 });
+                                                 receiver.on('message', function (ehEvent) {
+                                                     console.log('EventHub Event Received: ');
+                                                     console.log(JSON.stringify(ehEvent.body));
+                                                     console.log('');
+                                                 });
+                                             });
+               });
+           })
+           .catch(function (err) {
+               console.error(err.message);
+           });
+*/
 
 // Instantiate an mbed Device Connector object
 var mbedConnectorApi = new MbedConnectorApi({
@@ -413,6 +497,10 @@ mbedConnectorApi.on('notification', function(notification) {
         value: notification.payload
       });
     });
+    if (azureClientSender.send) {
+      console.log('' + Date.now() + ' Sending update to cloud');
+      azureClientSender.send(notification.payload); // , 'tsdb-partition-key'
+    }
   }
 });
 
