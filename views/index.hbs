@@ -69,10 +69,6 @@
               </div>
               <label><input type="checkbox" class="subscribe-accel"> Subscribe</label>
               <button class="get-accel">GET</button>
-            </div>
-          </div>
-          <div class="row">
-            <div class="small-12 medium-6 columns">
               <div class="row">
                 <div class="small-12 columns">
                   <h4>Sound level: <span class="sound-level-value">Unknown</span></h4>
@@ -82,6 +78,9 @@
                 </div>
                 <div class="small-12 columns">
                   <h4>Light level: <span class="light-level-value">Unknown</span></h4>
+                </div>
+                <div class="small-12 columns">
+                  <h4>Distance: <span class="distance-value">Unknown</span></h4>
                 </div>
               </div>
               <label><input type="checkbox" class="subscribe-analog"> Subscribe</label>
@@ -254,6 +253,11 @@
         socket.on('light-level', function (data) {
           console.log('light-level', data);
           $('#' + data.endpointName + ' .light-level-value').html(data.value);
+        });
+
+        socket.on('distance', function (data) {
+          console.log('distance', data);
+          $('#' + data.endpointName + ' .distance-value').html(data.value);
         });
 
         socket.on('json-data', function (data) {

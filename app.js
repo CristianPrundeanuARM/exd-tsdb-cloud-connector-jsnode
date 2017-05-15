@@ -24,6 +24,7 @@ var accelZResourceURI = '/3313/0/5704';
 var soundLevelResourceURI = '/3324/0/5600';
 var temperatureResourceURI = '/3303/0/5600';
 var lightLevelResourceURI = '/3301/0/5600';
+var distanceResourceURI = '/3330/0/5600';
 var jsonDataResourceURI = '/alldata/0/json';
 
 // Instantiate an mbed Device Connector object
@@ -142,6 +143,12 @@ io.on('connection', function (socket) {
         endpointName: data.endpointName
       });
     });
+    mbedConnectorApi.putResourceSubscription(data.endpointName, distanceResourceURI, function(error) {
+      if (error) throw error;
+      socket.emit('subscribed-to-distance', {
+        endpointName: data.endpointName
+      });
+    });
   });
 
   socket.on('subscribe-to-json', function (data) {
@@ -207,6 +214,12 @@ io.on('connection', function (socket) {
     mbedConnectorApi.deleteResourceSubscription(data.endpointName, lightLevelResourceURI, function(error) {
       if (error) throw error;
       socket.emit('unsubscribed-to-light-level', {
+        endpointName: data.endpointName
+      });
+    });
+    mbedConnectorApi.deleteResourceSubscription(data.endpointName, distanceResourceURI, function(error) {
+      if (error) throw error;
+      socket.emit('unsubscribed-to-distance', {
         endpointName: data.endpointName
       });
     });
@@ -278,6 +291,13 @@ io.on('connection', function (socket) {
     mbedConnectorApi.getResourceValue(data.endpointName, lightLevelResourceURI, function(error, value) {
       if (error) throw error;
       socket.emit('light-level', {
+        endpointName: data.endpointName,
+        value: value
+      });
+    });
+    mbedConnectorApi.getResourceValue(data.endpointName, distanceResourceURI, function(error, value) {
+      if (error) throw error;
+      socket.emit('distance', {
         endpointName: data.endpointName,
         value: value
       });
@@ -373,6 +393,14 @@ mbedConnectorApi.on('notification', function(notification) {
   if (notification.path === lightLevelResourceURI) {
     sockets.forEach(function(socket) {
       socket.emit('light-level', {
+        endpointName: notification.ep,
+        value: notification.payload
+      });
+    });
+  } else
+  if (notification.path === distanceResourceURI) {
+    sockets.forEach(function(socket) {
+      socket.emit('distance', {
         endpointName: notification.ep,
         value: notification.payload
       });
